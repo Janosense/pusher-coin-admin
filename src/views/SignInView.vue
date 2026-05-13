@@ -30,7 +30,7 @@ const onSubmitCode = async () => {
   localError.value = null
   const result = await auth.verifyCode(login.value, password.value, code.value)
   if (result.success) {
-    router.push(route.query.redirect || { name: 'home' })
+    router.push(route.query.redirect || { name: 'rooms-list' })
   } else {
     localError.value = result.error || 'Verification failed.'
   }
