@@ -3,6 +3,7 @@ import SignInView from '@/views/SignInView.vue'
 import RoomListView from '@/views/RoomListView.vue'
 import RoomFormView from '@/views/RoomFormView.vue'
 import RoomScheduleView from '@/views/RoomScheduleView.vue'
+import WithdrawalsView from '@/views/WithdrawalsView.vue'
 import { useAdminAuthStore } from '@/stores/auth.js'
 
 const router = createRouter({
@@ -32,6 +33,12 @@ const router = createRouter({
       path: '/rooms/:id/schedule',
       name: 'rooms-schedule',
       component: RoomScheduleView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/withdrawals',
+      name: 'withdrawals',
+      component: WithdrawalsView,
       meta: { requiresAuth: true }
     }
   ]

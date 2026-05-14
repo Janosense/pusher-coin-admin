@@ -19,6 +19,7 @@ const onLogout = async () => {
       </div>
       <nav class="layout__nav">
         <RouterLink :to="{ name: 'rooms-list' }">Rooms</RouterLink>
+        <RouterLink :to="{ name: 'withdrawals' }">Withdrawals</RouterLink>
       </nav>
       <div class="layout__user">
         <span>{{ auth.admin?.displayName || auth.admin?.email }}</span>
