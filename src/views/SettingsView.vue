@@ -2,40 +2,115 @@
 import { onMounted, ref } from 'vue'
 import AdminLayout from '@/components/AdminLayout.vue'
 import adminCoinPricingService from '@/services/adminCoinPricingService.js'
+import adminMachineService from '@/services/adminMachineService.js'
 
-const form = ref({ default: '40.00', min: '10.00', max: '500.00' })
-const isLoading = ref(false)
-const isSaving = ref(false)
-const error = ref(null)
-const successMessage = ref(null)
+// ---- coin pricing ----
+const pricingForm = ref({ default: '40.00', min: '10.00', max: '500.00' })
+const pricingLoading = ref(false)
+const pricingSaving = ref(false)
+const pricingError = ref(null)
+const pricingMessage = ref(null)
 
-const hydrate = async () => {
-  isLoading.value = true
-  error.value = null
+const hydratePricing = async () => {
+  pricingLoading.value = true
+  pricingError.value = null
   try {
-    form.value = await adminCoinPricingService.get()
+    pricingForm.value = await adminCoinPricingService.get()
   } catch (err) {
-    error.value = err.response?.data?.message || err.message
+    pricingError.value = err.response?.data?.message || err.message
   } finally {
-    isLoading.value = false
+    pricingLoading.value = false
   }
 }
 
-onMounted(hydrate)
-
-const onSave = async () => {
-  error.value = null
-  successMessage.value = null
-  isSaving.value = true
+const savePricing = async () => {
+  pricingError.value = null
+  pricingMessage.value = null
+  pricingSaving.value = true
   try {
-    form.value = await adminCoinPricingService.update(form.value)
-    successMessage.value = 'Coin pricing updated.'
+    pricingForm.value = await adminCoinPricingService.update(pricingForm.value)
+    pricingMessage.value = 'Coin pricing updated.'
   } catch (err) {
-    error.value = err.response?.data?.message || err.message
+    pricingError.value = err.response?.data?.message || err.message
   } finally {
-    isSaving.value = false
+    pricingSaving.value = false
   }
 }
+
+// ---- bonus mapping ----
+const bonusForm = ref({
+  // Twelve string fields (1..12) so `v-model` plays nicely with number
+  // inputs that can be momentarily empty during typing.
+  map: Object.fromEntries(Array.from({ length: 12 }, (_, i) => [String(i + 1), '0'])),
+  relayCoinCount: '0'
+})
+const bonusLoading = ref(false)
+const bonusSaving = ref(false)
+const bonusError = ref(null)
+const bonusMessage = ref(null)
+
+const hydrateBonus = async () => {
+  bonusLoading.value = true
+  bonusError.value = null
+  try {
+    const result = await adminMachineService.getBonusMap()
+    bonusForm.value = {
+      map: Object.fromEntries(
+        Array.from({ length: 12 }, (_, i) => {
+          const key = String(i + 1)
+          return [key, String(result.map[key] ?? 0)]
+        })
+      ),
+      relayCoinCount: String(result.relayCoinCount || 0)
+    }
+  } catch (err) {
+    bonusError.value = err.response?.data?.message || err.message
+  } finally {
+    bonusLoading.value = false
+  }
+}
+
+const saveBonus = async () => {
+  bonusError.value = null
+  bonusMessage.value = null
+  bonusSaving.value = true
+  try {
+    const intMap = {}
+    for (let i = 1; i <= 12; i++) {
+      const raw = String(bonusForm.value.map[i] ?? '').trim()
+      if (raw === '' || !/^\d+$/.test(raw)) {
+        bonusError.value = `Bonus ${i} must be a non-negative integer.`
+        bonusSaving.value = false
+        return
+      }
+      intMap[String(i)] = Number(raw)
+    }
+    const relayRaw = String(bonusForm.value.relayCoinCount ?? '').trim()
+    if (relayRaw === '' || !/^\d+$/.test(relayRaw)) {
+      bonusError.value = 'Relay coin count must be a non-negative integer.'
+      bonusSaving.value = false
+      return
+    }
+    const result = await adminMachineService.updateBonusMap({
+      map: intMap,
+      relayCoinCount: Number(relayRaw)
+    })
+    bonusForm.value.map = Object.fromEntries(
+      Array.from({ length: 12 }, (_, i) => [String(i + 1), String(result.map[String(i + 1)] ?? 0)])
+    )
+    bonusForm.value.relayCoinCount = String(result.relayCoinCount || 0)
+    bonusMessage.value = 'Bonus mapping updated.'
+  } catch (err) {
+    bonusError.value = err.response?.data?.message || err.message
+  } finally {
+    bonusSaving.value = false
+  }
+}
+
+onMounted(() => {
+  hydratePricing()
+  hydrateBonus()
+})
 </script>
 
 <template>
@@ -53,27 +128,77 @@ const onSave = async () => {
           </p>
         </header>
 
-        <form class="settings__form" @submit.prevent="onSave">
+        <form class="settings__form" @submit.prevent="savePricing">
           <label>
             <span>Min per coin</span>
-            <input v-model="form.min" type="number" min="0.01" step="0.01" required />
+            <input v-model="pricingForm.min" type="number" min="0.01" step="0.01" required />
           </label>
           <label>
             <span>Default per coin</span>
-            <input v-model="form.default" type="number" min="0.01" step="0.01" required />
+            <input v-model="pricingForm.default" type="number" min="0.01" step="0.01" required />
           </label>
           <label>
             <span>Max per coin</span>
-            <input v-model="form.max" type="number" min="0.01" step="0.01" required />
+            <input v-model="pricingForm.max" type="number" min="0.01" step="0.01" required />
           </label>
 
-          <p v-if="error" class="settings__error">{{ error }}</p>
-          <p v-if="successMessage" class="settings__success">{{ successMessage }}</p>
+          <p v-if="pricingError" class="settings__error">{{ pricingError }}</p>
+          <p v-if="pricingMessage" class="settings__success">{{ pricingMessage }}</p>
 
           <div class="settings__actions">
-            <button class="ghost" type="button" :disabled="isLoading" @click="hydrate">Reset</button>
-            <button type="submit" :disabled="isSaving || isLoading">
-              {{ isSaving ? 'Saving…' : 'Save' }}
+            <button class="ghost" type="button" :disabled="pricingLoading" @click="hydratePricing">Reset</button>
+            <button type="submit" :disabled="pricingSaving || pricingLoading">
+              {{ pricingSaving ? 'Saving…' : 'Save' }}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="settings__section">
+        <header class="settings__section-header">
+          <h3>Bonus mapping</h3>
+          <p>
+            Coins credited when the bonus wheel (<code>sensor.lc01_12</code>) lands
+            on a given number, plus a flat payout when the relay contact
+            (<code>sensor.relay_on</code>) closes. All values are coin counts; 0
+            means "no bonus."
+          </p>
+        </header>
+
+        <form class="settings__form" @submit.prevent="saveBonus">
+          <div class="settings__bonus-grid">
+            <label v-for="i in 12" :key="i" class="settings__bonus-cell">
+              <span>Bonus {{ i }}</span>
+              <input
+                v-model="bonusForm.map[String(i)]"
+                type="number"
+                min="0"
+                step="1"
+                inputmode="numeric"
+                required
+              />
+            </label>
+          </div>
+
+          <label class="settings__bonus-relay">
+            <span>Relay-closed coin count</span>
+            <input
+              v-model="bonusForm.relayCoinCount"
+              type="number"
+              min="0"
+              step="1"
+              inputmode="numeric"
+              required
+            />
+          </label>
+
+          <p v-if="bonusError" class="settings__error">{{ bonusError }}</p>
+          <p v-if="bonusMessage" class="settings__success">{{ bonusMessage }}</p>
+
+          <div class="settings__actions">
+            <button class="ghost" type="button" :disabled="bonusLoading" @click="hydrateBonus">Reset</button>
+            <button type="submit" :disabled="bonusSaving || bonusLoading">
+              {{ bonusSaving ? 'Saving…' : 'Save' }}
             </button>
           </div>
         </form>
@@ -229,5 +354,53 @@ const onSave = async () => {
 .settings__actions button.ghost:hover {
   border-color: var(--primary);
   color: var(--primary);
+}
+
+.settings__bonus-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.settings__bonus-cell {
+  display: flex;
+  flex-direction: column;
+  row-gap: 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.settings__bonus-cell input {
+  padding: 8px 10px;
+  background: var(--surface-elevated);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  outline: none;
+  font-size: 14px;
+  text-align: center;
+}
+
+.settings__bonus-cell input:focus {
+  border-color: var(--primary);
+}
+
+.settings__bonus-relay {
+  display: flex;
+  flex-direction: column;
+  row-gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.settings__bonus-relay input {
+  padding: 10px 12px;
+  background: var(--surface-elevated);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  outline: none;
 }
 </style>
