@@ -21,6 +21,7 @@ const onLogout = async () => {
         <RouterLink :to="{ name: 'rooms-list' }">Rooms</RouterLink>
         <RouterLink :to="{ name: 'withdrawals' }">Withdrawals</RouterLink>
         <RouterLink :to="{ name: 'machine' }">Machine</RouterLink>
+        <RouterLink :to="{ name: 'support-tickets' }">Support</RouterLink>
         <RouterLink :to="{ name: 'settings' }">Settings</RouterLink>
       </nav>
       <div class="layout__user">

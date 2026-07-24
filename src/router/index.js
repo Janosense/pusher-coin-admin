@@ -6,6 +6,8 @@ import RoomScheduleView from '@/views/RoomScheduleView.vue'
 import WithdrawalsView from '@/views/WithdrawalsView.vue'
 import MachineView from '@/views/MachineView.vue'
 import SettingsView from '@/views/SettingsView.vue'
+import TicketsView from '@/views/TicketsView.vue'
+import SubjectsView from '@/views/SubjectsView.vue'
 import { useAdminAuthStore } from '@/stores/auth.js'
 
 const router = createRouter({
@@ -47,6 +49,18 @@ const router = createRouter({
       path: '/machine',
       name: 'machine',
       component: MachineView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/support/tickets',
+      name: 'support-tickets',
+      component: TicketsView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/support/subjects',
+      name: 'support-subjects',
+      component: SubjectsView,
       meta: { requiresAuth: true }
     },
     {
