@@ -22,6 +22,13 @@ const mapSubject = (s) => ({
   order: Number(s.order || 0)
 })
 
+const mapCaptcha = (c) => ({
+  provider: c?.provider || 'turnstile',
+  siteKey: c?.site_key || '',
+  secretConfigured: !!c?.secret_configured,
+  enabled: !!c?.enabled
+})
+
 export const adminSupportService = {
   async listTickets({ status = '', search = '', page = 1, perPage = 20 } = {}) {
     const params = { page, per_page: perPage }
@@ -40,6 +47,25 @@ export const adminSupportService = {
   async updateTicketStatus(id, status) {
     const response = await api.patch(`/admin/support/tickets/${id}`, { status })
     return mapTicket(response.data)
+  },
+
+  /**
+   * `secretConfigured` reflects the `PC_CAPTCHA_SECRET` constant in
+   * wp-config.php. The secret itself is never sent over the wire — only
+   * whether it exists — so the panel can warn when the guest form is
+   * unprotected without exposing the value.
+   */
+  async getCaptcha() {
+    const response = await api.get('/admin/support/captcha')
+    return mapCaptcha(response.data)
+  },
+
+  async updateCaptcha({ provider, siteKey }) {
+    const response = await api.put('/admin/support/captcha', {
+      provider,
+      site_key: siteKey
+    })
+    return mapCaptcha(response.data)
   },
 
   async getSubjects() {
