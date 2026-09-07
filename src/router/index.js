@@ -7,6 +7,7 @@ import WithdrawalsView from '@/views/WithdrawalsView.vue'
 import MachineView from '@/views/MachineView.vue'
 import SettingsView from '@/views/SettingsView.vue'
 import TicketsView from '@/views/TicketsView.vue'
+import ChatView from '@/views/ChatView.vue'
 import SubjectsView from '@/views/SubjectsView.vue'
 import { useAdminAuthStore } from '@/stores/auth.js'
 
@@ -61,6 +62,12 @@ const router = createRouter({
       path: '/support/subjects',
       name: 'support-subjects',
       component: SubjectsView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/chat',
+      name: 'chat-moderation',
+      component: ChatView,
       meta: { requiresAuth: true }
     },
     {
